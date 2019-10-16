@@ -32,3 +32,8 @@ output "s3_bucket_hosted_zone_id" {
   value       = aws_s3_bucket.default.hosted_zone_id
   description = "The Route 53 Hosted Zone ID for this bucket's region"
 }
+
+output "bucket_regional_domain_name" {
+  value =  aws_s3_bucket.default.bucket_regional_domain_name
+  description = "The bucket region-specific domain name.  Used to prevent redirect issues from Cloudfront to S3 origin URL"
+}

@@ -21,7 +21,7 @@ variable "acm_certificate_arn" {
 variable "minimum_protocol_version" {
   description = "Minimum SSL/TLS protocol supported"
   type        = string
-  default     = "TLSv1.2"
+  default     = "TLSv1.1_2016"
 }
 
 variable "hostname" {

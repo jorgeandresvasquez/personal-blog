@@ -12,7 +12,7 @@ module "s3_website" {
 resource "aws_cloudfront_distribution" "default" {
   enabled             = var.enabled
   is_ipv6_enabled     = var.is_ipv6_enabled
-  comment             = "CDN for ${var.s3_website.s3_bucket_name} S3 Bucket"
+  comment             = "CDN for ${module.s3_website.s3_bucket_name} S3 Bucket"
   default_root_object = var.default_root_object
   price_class         = var.price_class
 
@@ -41,7 +41,7 @@ resource "aws_cloudfront_distribution" "default" {
   default_cache_behavior {
     allowed_methods  = var.allowed_methods
     cached_methods   = var.cached_methods
-    target_origin_id = module.distribution_label.id
+    target_origin_id = var.origin_id
     compress         = var.compress
     trusted_signers  = var.trusted_signers
 
@@ -89,7 +89,7 @@ resource "aws_cloudfront_distribution" "default" {
   web_acl_id          = var.web_acl_id
   wait_for_deployment = var.wait_for_deployment
 
-  tags = module.distribution_label.tags
+  tags = var.tags
 }
 
 module "dns" {

@@ -1,0 +1,105 @@
+# dependencies
+node_modules/
+.m2/
+
+# testing
+coverage
+
+# Terraform
+.terraform/
+tplan
+tfplan
+*.tfstate*
+
+# terraenv generated files
+cloud/terraform/providers/aws/*/generated-*
+
+# misc
+.DS_Store
+.env.development.local
+.env.test.local
+.env.production.local
+.webpack
+.serverless
+.vscode/
+
+# Virtualenv
+.venv*/
+
+# Python
+**/__pycache__/
+**/*.egg-info/
+
+### Java template
+# Compiled class file
+*.class
+
+# Intellij project files
+*.iml
+
+# Log file
+*.log
+
+# Package Files #
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+*.tar
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+### Maven template
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# Eclipse #
+.settings/
+.project
+.metadata 
+
+# Intellij #
+.idea/
+.classpath
+.factorypath
+
+# MS Cruft
+~*
+*.ps1
+*.bak*
+/awsLocalCredentials.sh
+*tunneling*.sh
+
+# Secrets
+**/secrets/
+
+# Local build
+**/build/
+!repoctl/lib/build/
+**/tmp/
+frontend/dist/
+
+*.ignore
+./.dockerignore
+
+# Generated docs
+docs/generated/
+
+# Frontend version
+frontend/frontendVersion.json
+
+# DB Dumps
+data/dumps/
+
+experimentation/
+
+repoctl/
