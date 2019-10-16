@@ -1,0 +1,5 @@
+stage = "prod"
+namespace = "personal-blog"
+parent_zone_name = "thepragmaticloud.com"
+hostname         = "www.thepragmaticloud.com"
+acm_certificate_arn = "arn:aws:acm:us-east-1:893603268755:certificate/7a57c759-3267-45db-a1ac-9f426f04c220"
