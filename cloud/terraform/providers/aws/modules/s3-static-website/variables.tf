@@ -28,9 +28,9 @@ variable "delimiter" {
   description = "Delimiter to be used between `name`, `namespace`, `stage`, etc."
 }
 
-variable "hostname" {
+variable "bucket_name" {
   type        = string
-  description = "Name of website bucket in `fqdn` format (e.g. `test.example.com`). IMPORTANT! Do not add trailing dot (`.`)"
+  description = "Name of website bucket.  If the intention is to add a DNS A record to map this bucket name then it has to be in `fqdn` format (e.g. `test.example.com`). IMPORTANT! Do not add trailing dot (`.`).  If no DNS record is required bucket can have any name that is supproted by S3."
 }
 
 variable "parent_zone_id" {
@@ -175,4 +175,10 @@ variable "deployment_actions" {
   type        = list(string)
   default     = ["s3:PutObject", "s3:PutObjectAcl", "s3:GetObject", "s3:DeleteObject", "s3:ListBucket", "s3:ListBucketMultipartUploads", "s3:GetBucketLocation", "s3:AbortMultipartUpload"]
   description = "List of actions to permit deployment ARNs to perform"
+}
+
+variable "create_dns_bucket_record" {
+  type        = bool
+  default     = false
+  description = "Create a route53 Alias record to map an FQDN to the bucket name (e.g. `true` or `false`)"
 }

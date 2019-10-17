@@ -16,7 +16,7 @@ locals {
 }
 
 resource "aws_s3_bucket" "default" {
-  bucket        = var.hostname
+  bucket        = var.bucket_name
   acl           = "public-read"
   tags          = var.tags
   region        = var.region
@@ -190,7 +190,8 @@ data "aws_iam_policy_document" "deployment" {
 
 module "dns" {
   source           = "git::https://github.com/cloudposse/terraform-aws-route53-alias.git?ref=tags/0.3.0"
-  aliases          = compact([signum(length(var.parent_zone_id)) == 1 || signum(length(var.parent_zone_name)) == 1 ? var.hostname : ""])
+  enabled          = var.create_dns_bucket_record
+  aliases          = compact([signum(length(var.parent_zone_id)) == 1 || signum(length(var.parent_zone_name)) == 1 ? var.bucket_name : ""])
   parent_zone_id   = var.parent_zone_id
   parent_zone_name = var.parent_zone_name
   target_dns_name  = aws_s3_bucket.default.website_domain

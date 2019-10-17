@@ -2,11 +2,12 @@ module "s3_website" {
   source           = "../s3-static-website"
   namespace        = var.namespace
   stage            = var.stage
-  hostname         = var.hostname
+  bucket_name         = var.bucket_name
   parent_zone_name = var.parent_zone_name
   force_destroy    = var.origin_force_destroy
   error_document   = "error.html"
   tags             = var.tags
+  create_dns_bucket_record          = false
 }
 
 resource "aws_cloudfront_distribution" "default" {

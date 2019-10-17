@@ -23,8 +23,3 @@ variable "minimum_protocol_version" {
   type        = string
   default     = "TLSv1.1_2016"
 }
-
-variable "hostname" {
-  type        = string
-  description = "Name of website bucket in `fqdn` format (e.g. `test.example.com`). IMPORTANT! Do not add trailing dot (`.`)"
-}

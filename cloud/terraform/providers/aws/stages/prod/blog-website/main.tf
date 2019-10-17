@@ -32,11 +32,10 @@ module "blog_website" {
   source                   = "../../../modules/s3-static-website-cdn"
   namespace                = var.namespace
   stage                    = var.stage
-  hostname                 = var.hostname
+  bucket_name              = "${var.namespace}-${var.stage}"
   parent_zone_name         = var.parent_zone_name
-  origin_bucket            = "www.thepragmaticloud.com"
-  origin_id                 = "${var.namespace}-${var.stage}-origin-id"
-  use_regional_s3_endpoint = true
+  aliases                  = ["www.thepragmaticloud.com", "thepragmaticloud.com"]
+  origin_id                = "${var.namespace}-${var.stage}-origin-id"
   origin_force_destroy     = true
   acm_certificate_arn      = var.acm_certificate_arn
   minimum_protocol_version = var.minimum_protocol_version

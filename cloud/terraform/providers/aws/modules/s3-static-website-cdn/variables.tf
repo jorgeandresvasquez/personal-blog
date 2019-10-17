@@ -52,18 +52,6 @@ variable "aliases" {
   default     = []
 }
 
-variable "use_regional_s3_endpoint" {
-  type        = bool
-  description = "When set to 'true' the s3 origin_bucket will use the regional endpoint address instead of the global endpoint address"
-  default     = false
-}
-
-variable "origin_bucket" {
-  type        = string
-  default     = ""
-  description = "Origin S3 bucket name"
-}
-
 variable "origin_path" {
   # http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesOriginPath
   type        = string
@@ -235,9 +223,9 @@ variable "geo_restriction_locations" {
   description = "List of country codes for which  CloudFront either to distribute content (whitelist) or not distribute your content (blacklist)"
 }
 
-variable "hostname" {
+variable "bucket_name" {
   type        = string
-  description = "Name of website bucket in `fqdn` format (e.g. `test.example.com`). IMPORTANT! Do not add trailing dot (`.`)"
+  description = "Name of the bucket"
 }
 
 variable "parent_zone_id" {

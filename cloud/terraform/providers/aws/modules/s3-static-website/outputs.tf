@@ -1,6 +1,6 @@
 output "hostname" {
-  value       = var.hostname
-  description = "Bucket hostname"
+  value       = var.bucket_name
+  description = "Bucket name"
 }
 
 output "s3_bucket_name" {
