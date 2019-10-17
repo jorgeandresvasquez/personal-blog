@@ -3,12 +3,10 @@ title: Managing IAC like a Rockstar using Terraform
 date: 2019-10-16 23:43:41
 tags:
 ---
-
-# Managing IAC like a Rockstar using Terraform
-
 Getting started with technologies these days is easy, there's plenty of introductory articles and most technology providers will keep dedicated teams for writing and keeping up-to-date technical documentation with titles such as `Getting started with xxxx`. `10 minute intro to xxxxx`, `Quick intro to...`  Terraform is no exception to this and they have great entry level documentation here:  
 - [Intro to Terraform](https://www.terraform.io/intro/index.html).
 - [Getting started with Terraform](https://learn.hashicorp.com/terraform/getting-started/install.html).
+
 The documentation here is definitely top quality but leaves you that feeling -that most hello worlds have on you- like you're just grasping the surface and there's lots of problems that complex, enterprise-level projects have that remain unanswered.
 Everybody has a different learning style, but my personal preference is learned lessons by a mix of theory and examples (I am a big fan of all books finishing by `...in Action`).  This article is meant to go a little deeper into Terraform by addressing the creation of a blog site in AWS S3.  During this process the following questions will be answered as the article progresses:
 1. How do we define modules that are reusable by a team using Terraform?
@@ -16,8 +14,15 @@ Everybody has a different learning style, but my personal preference is learned 
     - Here it is worth noting that IAC is after all code and the best coding practices that have been refined over the years for software systems are also applicable to IAC.[Reference][1]  
 3. How do we setup automated testing for our IAC?
 
-Before proceeding I will take some time to position Terraform as a tool in the world of DevOps.
-Let's begin by saying that Devops is actually one of the best coined buzzwords that I actually have encountered throughout my career.  There are a lo of buzzwords that are unclear and confusing such as Microservices, Digital Transformation, Web 2.0, etc.  The word Devops is actually very rich semantically and contains the core meaning in the word itself which is a better collaboration between Developers and Operations teams, in some cases almost being interdisciplinary and having the same people doing both tasks.  It is very important to clarify a KEY element here which is the development aspect in DEVOPS.  This movement hugely embraces development as the automation element and therefore brings a lot of Software Engineering elements to the hardware and infrastructure world.  
+Before proceeding I will take some time to define terraform and define it's relevancy in the DevOps universe.
+Let's begin by saying that Devops is actually one of the best coined buzzwords that I actually have encountered throughout my career.  There are a lo of buzzwords that are unclear and confusing such as Microservices, Digital Transformation, Web 2.0, etc.  The word Devops is actually very rich semantically and contains the core meaning in the word itself which is a better collaboration between Developers and Operations teams, in some cases almost being interdisciplinary and having the same people doing both tasks.  It is very important to clarify a KEY element here which is the development aspect in DEVOPS.  This movement hugely embraces development as the automation element and therefore brings a lot of Software Engineering elements to the hardware and infrastructure world.
+
+So now back to defining Terraform and the kind of tool it is.  Terraform is a tool to provision Infrastructure.  Provisioning means to `bring infrastructure resources to life`.  Terraform uses a declarative approach and tracks the state of the resources that you tell it to track.  The interesting aspect here is that you don't need to track the `HOW` to arrive to a specific state, you just have to worry about the `WHAT`, terraform does the rest, it basically takes care of understanding the differences between an infrastructure's current state and the most recent state that it recorded and does a diff between both and figures out the most optimal path to arrive to the new desired state.  So whenever you run terraform in the background it reads its current state of the infrastructure, reads the real state of the infrastructure and figures out how what changes are required in the real infrastructure to arrived to the desired state.  
+There are 3 main pieces in the terraform equation:  
+1. current known terraform state
+2. new desired state 
+3. actual infrastructure state.  
+Terraform's typical lifecycle will compare these 3 states and identify the required changes to achieve the new desired state.  These changes can be of 3 types:  Create, Add, or Modification of resource(s).  A key notion to consider is the notion of drift, which is the deviation of your infrastructure state from the one that Terraform is tracking.  Drift can happen for example when a user modifies a resource outside of terraform using a UI (e.g the AWS console.  Terraform does its best to deal with drift so as part of its flow it identifies changes between the known and desired terraform state and the real infrastructure state and decides on the actions to take.  Note that from terraform's point of view it's end goal is the desired state, so it will identify any actions required to bring the infrastructure to the desired state.  This means that modifications that took place outside of terraform will get lost if they're not specified in the desired state.        
 
 This article will be the first of a series of iterations using different use cases that expose best practices within Terraform by example and will progress in complexity from one use case to another.  The first use case that will be covered is the definition of a blog site using serverless technologies in AWS.
 
@@ -37,9 +42,17 @@ The chosen technology stack for the solution is:
 - Complimentary tool to fill in some Terraform gaps:  [Terragrunt](https://github.com/gruntwork-io/terragrunt)
 - Tool to test terraform:  [Terratest](https://github.com/gruntwork-io/terratest)
 - Tool used to document the architecture and environments visually:  draw.io vs cloudcraft.co (really cool 3D visualization but free edition has limited grid)
-Note:  The goal of this article isn't to justify or explain the rationale behind the chosen technology stack, there are other great tools to manage blogs or to publish static websites out there and I don't have anything against them (Wordpress, etc.).
+Note:  The goal of this article isn't to justify or explain the rationale behind the chosen technology stack, there are other great tools to manage blogs or to publish static websites out there and I don't have anything against them (Wordpress, Jekyll, etc.).
+
+All of the code used for this article is available in the following github repository:  https://github.com/jorgeandresvasquez/personal-blog.
 
 For the visually inclined (like me) here goes a visual representation of the infrastructure:
+
+{% asset_img JorgePersonalBlogAWSArchitecture.png AWS Personal Blog Architecture %}
+
+And the terraform code folder structure is as follows:
+
+{% asset_img terraformPersonalBlogFolderStructure.png AWS Personal Blog Architecture %}
 
 The folder structure for this system is as follows:
 - dev
@@ -61,22 +74,25 @@ Notice that if we don't define modules the code above will end up with a lot of 
 ### Part 1:  Create Global Resources
 
 1.  Setup credentials for AWS and variables for Terraform
-```
-export AWS_ACCESS_KEY_ID=(your access key id)
-export AWS_SECRET_ACCESS_KEY=(your secret access key)
- export TF_VAR_db_password="(YOUR_DB_PASSWORD)"
+
+``` bash
+$ export AWS_ACCESS_KEY_ID=(your access key id)
+$ export AWS_SECRET_ACCESS_KEY=(your secret access key)
+$ export TF_VAR_db_password="(YOUR_DB_PASSWORD)"
 ```
 2. Set the variable names for the global S3 bucket to store the terraform state and the dynamodb table for the locks in file:  `global/s3/variables.tf`
 
 3.  Create the global Terraform resources in AWS using local state file:
-```
+
+``` bash
 $ cd cloud/terraform/providers/aws/global
 $ terraform init
 $ terraform apply
 ```
 
 4.  Add the following section to the file:  `global/main.tf`
-```
+
+``` yaml
 terraform {
   backend "s3" {
     # Replace this with your bucket name!
@@ -89,10 +105,10 @@ terraform {
     encrypt        = true
   }
 }
-``` 
+```
 
 5. Move the local state file to a remote backend:
-```
+``` bash
 $ cd global
 $ terraform init
 ```
@@ -107,15 +123,17 @@ Also there's a fundamental requirement of cloudfront, which is that the certific
 To use an ACM Certificate with Amazon CloudFront, you must request or import the certificate in the US East (N. Virginia) region. ACM Certificates in this region that are associated with a CloudFront distribution are distributed to all the geographic locations configured for that distribution.
 ```
 7.  Modify the terrafrom.tfvars, copy-paste the ACM Certificate ARN from the previous step and run:
-```
-terraform plan -out tplan 
-terraform apply tplan
+``` bash
+$ terraform plan -out tplan 
+$ terraform apply tplan
 ```
 Note that the above terraform execution can take around 15 minutes so this might be a good time for a coffee.
 There's also a variable named:  `wait_for_deployment` that switches off the waiting of terraform for the cloudfron distribution status to change from `InProgress` to `Deployed`. 
 When modifying the terraform.tfvars special attention is required for the value of `hostname` which will be both the [FQDN](https://en.wikipedia.org/wiki/Fully_qualified_domain_name) (Fully Qualified Domain Name) (Ex:  wwww.myblog.com or blog.jackwhite.com) to access your blog as well as the name of the bucket.  Behind the scenes when setting up a public S3 website the name of the bucket has to match with the FQDN of the website.  So in case the bucket name associated to your FQDN is already taken (S3 bucket names have to be universally unique) you won't be able to proceed with your choice.  
 
-## Global Terraform best practices
+## Terraform best practices
+So now let's look at what we just did using terraform and try to learn some lessons from the way the terraform source is structureed:
+- 
 - Map the folder structure to the remote state structure
 - Use tags, separate them between global ones and resource-specific ones:
     - Ideas for global tags:
@@ -135,7 +153,7 @@ When modifying the terraform.tfvars special attention is required for the value 
     - Example:  Changing names can lead to downtimes
     - use a create_before_destroy strategy when applicable for renaming
     - Use the terraform state mv command when you want to rename a terraform resource (rename it in both the tf file and then in the state with this command)
-- version pin all of your Terraform modules to a specific version of Terraform
+- Version pin all of your Terraform modules to a specific version of Terraform
     - For production-grade code, it is recommended to pin the version even more strictly:
     ```
     terraform {
@@ -190,6 +208,8 @@ https://www.techiediaries.com/jekyll-hugo-hexo/
     - https://github.com/ppoffice/hexo-theme-icarus
 - Commenting platforms:
     - https://disqus.com/pricing/
+- https://xiaoxing.us/2017/11/18/from-0-to-1-build-your-blog-using-hexo/
+- https://pages.github.com/
 
 
 ## Ideas

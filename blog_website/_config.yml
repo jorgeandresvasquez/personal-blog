@@ -56,8 +56,7 @@ prism_plugin:
   custom_css:
 
 search:
-  path: search.xml
-  field: post
+  type: insight
 
 # Home page setting
 # path: Root path for your blogs index page. (default = '')
