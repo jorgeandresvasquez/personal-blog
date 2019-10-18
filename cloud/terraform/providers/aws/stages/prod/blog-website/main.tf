@@ -29,7 +29,7 @@ module "labels" {
 }
 
 module "blog_website" {
-  source                   = "../../../modules/s3-static-website-cdn"
+  source                   = "git::https://github.com/jorgeandresvasquez/terraform.git//modules/s3-static-website-cdn?ref=0.0.3"
   namespace                = var.namespace
   stage                    = var.stage
   bucket_name              = "${var.namespace}-${var.stage}"

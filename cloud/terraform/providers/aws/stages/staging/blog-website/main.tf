@@ -24,18 +24,18 @@ module "labels" {
 
   tags = {
     Stage       = var.stage
-    Project     = var.project
+    Namespace     = var.namespace
   }
 }
 
 module "s3_website" {
-  source           = "git::https://github.com/cloudposse/terraform-aws-s3-website.git?ref=tags/0.8.0"
+  source           = "git::https://github.com/jorgeandresvasquez/terraform.git//modules/s3-static-website?ref=0.0.3"
   namespace        = "blog"
   stage            = var.stage
-  name             = "static-site"
-  hostname         = "blog.staging.thepragmaticloud.com"
+  bucket_name      = "blog.staging.thepragmaticloud.com"
   parent_zone_name = "thepragmaticloud.com"
   force_destroy    = true
   error_document   = "error.html"
+  create_dns_bucket_record          = true
   tags             = module.labels.tags
 }

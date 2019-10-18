@@ -183,8 +183,6 @@ So now let's look at what we just did using terraform and try to learn some less
     ```
 - Use consistent naming conventions for your resources.  The naming conventions can change according to the resource but at least try to include the namespace and stage consistently in there, this way whoever looks at a resource can immediately tell where is it being used.    
 
-## Recommended Naming Conventions
-
 ## References
 [1]: [Best Coding Practices](https://en.wikipedia.org/wiki/Best_coding_practices)
 [2]: [Similar article on starting a blog using hexo and S3] https://dizzy.zone/2017/11/30/Starting-a-blog-with-hexo-and-AWS-S3/
@@ -198,38 +196,39 @@ So now let's look at what we just did using terraform and try to learn some less
 [5]: [Theme chosen for the blog content in Hexo](https://github.com/ppoffice/hexo-theme-icarus)
 
 Finally, here goes my curated list on favorite articles, books, and videos on terraform:
+{% blockquote %}
+- Official Terraform Docs
+    - https://www.terraform.io/intro/index.html
+- Terraform step by step learning guide from Hashicorp
+    - https://learn.hashicorp.com/terraform#getting-started
+- Terraform up and running 2nd edition
+    - https://www.terraformupandrunning.com/
+- Why we use Terraform and not Chef, Puppet, Ansible, SaltStack, or CloudFormation
+    - https://blog.gruntwork.io/why-we-use-terraform-and-not-chef-puppet-ansible-saltstack-or-cloudformation-7989dad2865c
+- An Introduction to Terraform
+    - https://blog.gruntwork.io/an-introduction-to-terraform-f17df9c6d180
+- How to manage Terraform state
+    - https://blog.gruntwork.io/how-to-manage-terraform-state-28f5697e68fa
+- How to create reusable infrastructure with Terraform modules
+    - https://blog.gruntwork.io/how-to-create-reusable-infrastructure-with-terraform-modules-25526d65f73d
+- Terraform tips & tricks: loops, if-statements, and gotchas
+    - https://blog.gruntwork.io/terraform-tips-tricks-loops-if-statements-and-gotchas-f739bbae55f9
+- How to keep your Terraform code DRY and maintainable:
+    - https://blog.gruntwork.io/terragrunt-how-to-keep-your-terraform-code-dry-and-maintainable-f61ae06959d8
+- How to use Terraform as a team
+    - https://blog.gruntwork.io/how-to-use-terraform-as-a-team-251bc1104973
+- Installing Multiple Versions of Terraform with Homebrew
+    - https://blog.gruntwork.io/installing-multiple-versions-of-terraform-with-homebrew-899f6d124ff9
+- Real world experience and proven best practices for terraform
+    - https://www.hashicorp.com/resources/terraforming-real-world-experience-best-practices
+- 5 Lessons Learned From Writing Over 300,000 Lines of Infrastructure Code (Excelent!!!!)
+    - https://www.youtube.com/watch?v=RTEgE2lcyk4
+- Terragrunt: how to keep your Terraform code DRY and maintainable
+    - https://blog.gruntwork.io/terragrunt-how-to-keep-your-terraform-code-dry-and-maintainable-f61ae06959d8
+- Open sourcing Terratest: a swiss army knife for testing infrastructure code
+    - https://blog.gruntwork.io/open-sourcing-terratest-a-swiss-army-knife-for-testing-infrastructure-code-5d883336fcd5
+{% endblockquote %}
 
-    - Official Terraform Docs
-        - https://www.terraform.io/intro/index.html
-    - Terraform step by step learning guide from Hashicorp
-        - https://learn.hashicorp.com/terraform#getting-started
-    - Terraform up and running 2nd edition
-        - https://www.terraformupandrunning.com/
-    - Why we use Terraform and not Chef, Puppet, Ansible, SaltStack, or CloudFormation
-        - https://blog.gruntwork.io/why-we-use-terraform-and-not-chef-puppet-ansible-saltstack-or-cloudformation-7989dad2865c
-    - An Introduction to Terraform
-        - https://blog.gruntwork.io/an-introduction-to-terraform-f17df9c6d180
-    - How to manage Terraform state
-        - https://blog.gruntwork.io/how-to-manage-terraform-state-28f5697e68fa
-    - How to create reusable infrastructure with Terraform modules
-        - https://blog.gruntwork.io/how-to-create-reusable-infrastructure-with-terraform-modules-25526d65f73d
-    - Terraform tips & tricks: loops, if-statements, and gotchas
-        - https://blog.gruntwork.io/terraform-tips-tricks-loops-if-statements-and-gotchas-f739bbae55f9
-    - How to keep your Terraform code DRY and maintainable:
-        - https://blog.gruntwork.io/terragrunt-how-to-keep-your-terraform-code-dry-and-maintainable-f61ae06959d8
-    - How to use Terraform as a team
-        - https://blog.gruntwork.io/how-to-use-terraform-as-a-team-251bc1104973
-    - Installing Multiple Versions of Terraform with Homebrew
-        - https://blog.gruntwork.io/installing-multiple-versions-of-terraform-with-homebrew-899f6d124ff9
-    - Real world experience and proven best practices for terraform
-        - https://www.hashicorp.com/resources/terraforming-real-world-experience-best-practices
-    - 5 Lessons Learned From Writing Over 300,000 Lines of Infrastructure Code (Excelent!!!!)
-        - https://www.youtube.com/watch?v=RTEgE2lcyk4
-    - Terragrunt: how to keep your Terraform code DRY and maintainable
-        - https://blog.gruntwork.io/terragrunt-how-to-keep-your-terraform-code-dry-and-maintainable-f61ae06959d8
-    - Open sourcing Terratest: a swiss army knife for testing infrastructure code
-        - https://blog.gruntwork.io/open-sourcing-terratest-a-swiss-army-knife-for-testing-infrastructure-code-5d883336fcd5
-
-_Special kudos to GruntWork, they're doing an amazing job with devops in all aspects, with blog posts, books, open source tools, etc.,  One of the founders of the company:  **Yevgeniy Brikman** is IMO the community rockstar of Terraform!_
+_Special kudos to Hashicorp for creating Terraform and for open sourcing it and creating an awesome community around it, you guys ruck! And to GruntWork for doing an amazing job with devops in all aspects, with blog posts, books, open source tools, etc.,  One of the founders of the company:  **Yevgeniy Brikman** is IMO the community rockstar of Terraform!_
 
 

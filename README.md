@@ -20,8 +20,6 @@ This repository contains my personal blog.  All of the static content is under t
     - https://github.com/gruntwork-io/terragrunt
 - Devops Checklist:
     - https://www.gruntwork.io/devops-checklist/
-- Terraform up and running:
-    - https://www.terraformupandrunning.com/
 - Similar approach to hosting a static website in S3+Cloudfront and setting up infrastructure using Terraform:
     - https://medium.com/runatlantis/hosting-our-static-site-over-ssl-with-s3-acm-cloudfront-and-terraform-513b799aec0f
 - Tool to do peer reviews of terraform modules:
