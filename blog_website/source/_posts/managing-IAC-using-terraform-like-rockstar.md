@@ -9,18 +9,18 @@ categories:
     - [IAC, Terraform]
 thumbnail: images/rockstar.jpg
 ---
-Getting started with technologies these days is easy, there's plenty of introductory articles and most technology providers will keep dedicated teams for writing and keeping up-to-date technical documentation with titles such as `Getting started with xxxx`. `10 minute intro to xxxxx`, `Quick intro to...`  Terraform is no exception to this and they have great entry level documentation here:  
+Getting started with technologies these days is easier than ever since there are plenty of introductory articles and most technology providers will keep dedicated teams for writing and keeping up-to-date technical documentation with titles such as `Getting started with xxxx`. `10 minute intro to xxxxx`, `Quick intro to...`, etc.  Terraform is no exception to this and they have great entry level documentation here:  
 - [Intro to Terraform](https://www.terraform.io/intro/index.html).
 - [Getting started with Terraform](https://learn.hashicorp.com/terraform/getting-started/install.html).
 
-The documentation here is definitely top quality but leaves you that feeling -that most hello worlds have on you- like you're just grasping the surface and there's lots of problems that complex, enterprise-level projects have that remain unanswered.
-Everybody has a different learning style, but my personal preference is learned lessons by a mix of theory and examples (I am a big fan of all books finishing by `...in Action`).  
+Although the Terraform documentation is top quality after reading it you still feel like you're just grasping the surface (as most hello worlds do) and there's lots of complex, enterprise-level scenarios that are still unclear.
+People have different learning styles, for me my preference is learning lessons by a mix of theory and examples (I am a big fan of all books finishing by `...in Action`).  
 
 This article will be the first of a series of articles using different use cases that expose best practices within Terraform by example and will progress in complexity from one use case to another.  The first use case that will be covered is the definition of a blog site using serverless technologies in AWS.
 My goal is to answer the following questions by the end of this article:
-1. How do we define modules that are reusable by a team using Terraform?
-2. How do we separate the IAC between different environments while achieving [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)?
-    - Here it is worth noting that IAC is after all code and the best coding practices that have been refined over the years for software systems are also applicable to IAC.[Reference][1] 
+1. How do we define modules that are reusable by a team in Terraform?
+2. How do we separate the IAC (Infrastructure as Code) between different environments while achieving [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)?
+    It is worth noting that IAC is after all code and the best coding practices that have been refined over the years for software systems are also applicable to IAC. [References](#ref1) 
 
 Before proceeding let's define terraform and it's relevancy within the DevOps universe.
 {% blockquote %}
@@ -60,82 +60,99 @@ For the visually inclined (like myself!) here is a diagram of the infrastructure
 
 The solution has 2 main parts:
 1. The infrastructure provisioning
-2. The content of the static bloggin website that will run in the AWS infrastructure
+1. The content of the static blogging website that will run in the AWS infrastructure
 
-This article focuses more on the infrastructure provisioning, however I added some relevant links to the blogging tool (Hexo) at the end 
+## Terraform Folder Structure
 
-{% asset_img terraformPersonalBlogFolderStructure.png AWS Personal Blog Architecture %}
+This article focuses only on the infrastructure provisioning, however I added some relevant links to the blogging tool (Hexo) at the end of this article (Hexo Resources).
 
-The folder structure for this system is as follows:
-- dev
-    - static_website
+| Cloud Folder Structure Before  | Cloud Folder Structure After          |
+| :-------------:           |:-------------:                  |
+| {% asset_img terraformPersonalBlogFolderStructureModuleStabilization.png AWS Personal Blog Architecture %}               | {% asset_img terraformPersonalBlogFolderStructureFinal.png AWS Personal Blog Architecture %}  |
+
+One key aspect before starting writing terraform code is to define the folder structure for it inside of your VCS [References](#ref3) (In our case we're using git and github).  For my projects I like breaking them by product in a monorepo and inside that monorepo [References](#ref2) I have a folder named:  `cloud`.  It helps me a lot when my folder structure clearly maps to my cloud tooling, environments and modules.  This folder is where I put all the IAC related to provisioning.  Inside cloud there's a subfolder for terraform...providers...aws.  Note that a product can have multiple providers (not too common but possible), but in this case we only have aws.  Under aws I like to separate my resources at a high level by the ones that are global (by global I mean shared across all stages or environments) and the ones that are specific to each environment.  Sometimes the notion of fully global resources may not be present, for example if your company has a completely different AWS account for each environment.  (This is a subject for another discussion altogether but in enterprise systems I highly recommend you to use at least 2 different AWS accounts:  one for production and another one for non-prod).  
+In this case since this is a personal blog I decided to only use one AWS account and therefore under global I am keeping the terraform remote backend which is comprised of the S3 bucket that stores my terraform state as well as the dynamodb table to prevent multiple users from modifying the terraform state at the same time (Via terraform state locking).  
+For the stages notice that I only have 2 for this specific project:  prod and staging.  It is very common practice to have slight differences in environments.  For example, if you need an AWS RDS Cluster with an instances class of `db.r5.24xlarge` which costs around $11.52/hour you probably want to use something smaller and cheapar than that for your dev environments).  Also, there can be resources that you probably don't require at all in a specific environment.  For example, in this case I purposedly decided to use a CDN with AWS Cloudfront for the prod version of my blog but for the staging version I decided to use directly an S3 bucket where I can verify the rendering of my blog before pushing everything to prod.  
+One last and very important folder level by environment is a specific terraform layer/aspect (I still don't have a great word for this).  Let's say that my blog starts becoming more complex and eventually I decide to introduce a relational database to support comments in my blog posts.  In this case I would create another folder for the networking layer of my product and another folder for the database layer of my product.  The reasoning behind this is to be able to separate the different states of different layers of a product to avoid unnecessary risks when modifying infrastructure.
+
+Our folder structure for this scenario would be something as follows:
+
 - prod
-    - static_website
-- mgmt (An environment for DevOps tooling (e.g., bastion host, Jenkins))
-- global (A place to put resources that are used across all environments (e.g., S3, IAM))
+ - blog-website
+ - relational-db
+ - vpc
+- staging
+ - blog-website
+ - relational-db
+ - vpc
 
-For each component the typical files include:
-- variables.tf
-- output.tf
-- main.tf
+I believe that we can all agree that the change frequency of your vpc and relational-db will probably be much less than that of your blog-website so instead of modifying a centralized terraform state it is better to just modify the terraform state associated to the layer of your product that changes.  
+Also notice that in the folder structure screens at the top there are 2 columns with 2 images:  one representing the folder structure before and the other one after.  This is a personal preference but I have found that creating a stable terraform module requires some practice and iterations to get it right so my preference here is to set it up in the context of a specific application in a modules folder, iterate it and get it stable and once it is then move it to either its own repository or a repository with all the shared modules of an organization.  I know that some people might not agree with me but in my background as a developer it takes me a while to abstract a module correctly and I prefer doing that in isolatio because as Werner Vogels, CTO of Amazon Web Services, says: _"Code can change but APIs are Forever"_ and once a module gets pusblished and starts being used by different systems it is no longer a good idea to do heavy refactoring on it.  
 
-Notice that if we don't define modules the code above will end up with a lot of duplication.
+## Steps to Create the AWS cloud environment for my blog website
 
-## Steps to Create the AWS cloud environment
+The following were all the steps that I followed in order to create the infrastructure to host my blogging website in AWS.  You can follow similar steps and use a similar structure to the one I setup in github and you should be able to have a very similar blogging website in no time.    
 
 ### Part 1:  Create Global Resources
 
 1.  Setup credentials for AWS and variables for Terraform
 
-``` bash
-$ export AWS_ACCESS_KEY_ID=(your access key id)
-$ export AWS_SECRET_ACCESS_KEY=(your secret access key)
-$ export TF_VAR_db_password="(YOUR_DB_PASSWORD)"
-```
-2. Set the variable names for the global S3 bucket to store the terraform state and the dynamodb table for the locks in file:  `global/s3/variables.tf`
+    ``` bash
+    $ export AWS_ACCESS_KEY_ID=(your access key id)
+    $ export AWS_SECRET_ACCESS_KEY=(your secret access key)
+    $ export TF_VAR_db_password="(YOUR_DB_PASSWORD)"
+    ```
+1.  Set the variable names for the global S3 bucket to store the terraform state and the dynamodb table for the locks in file:  `global/s3/variables.tf`
 
-3.  Create the global Terraform resources in AWS using local state file:
+1.  Create the global Terraform resources in AWS using local state file:
 
-``` bash
-$ cd cloud/terraform/providers/aws/global
-$ terraform init
-$ terraform apply
-```
+    ``` bash
+    $ cd cloud/terraform/providers/aws/global
+    $ terraform init
+    $ terraform apply
+    ```
 
-For this specific use case we will be using one same AWS account with 2 stages:  staging and production.  A preferable approach for enterprise environments is to have different AWS accounts, one for each stage or at least 2 of them:  one for production and another one for non-production.  The rationale in this separation is to have complete isolation between environments to prevent accidents and have separation of roles and permissions for the DevOps teams. 
+    For this specific use case we will be using one same AWS account with 2 stages:  staging and production.  A preferable approach for enterprise environments is to have different AWS accounts, one for each stage or at least 2 of them:  one for production and another one for non-production.  The rationale in this separation is to have complete isolation between environments to prevent accidents and have separation of roles and permissions for the DevOps teams. 
 
-4.  Add the following section to the file:  `global/main.tf`
+1.  Add the following section to the file:  `global/main.tf`
 
-``` yaml
-terraform {
-  backend "s3" {
-    # Replace this with your bucket name!
-    bucket         = "(YOUR BLOBAL S3 BUCKET NAME)"
-    key            = "global/s3/terraform.tfstate"
-    region         = "us-east-2"
+    ``` yaml
+    terraform {
+    backend "s3" {
+        # Replace this with your bucket name!
+        bucket         = "(YOUR BLOBAL S3 BUCKET NAME)"
+        key            = "global/s3/terraform.tfstate"
+        region         = "us-east-2"
 
-    # Replace this with your DynamoDB table name!
-    dynamodb_table = "(YOUR DYNAMODB TABLE NAME)"
-    encrypt        = true
-  }
-}
-```
+        # Replace this with your DynamoDB table name!
+        dynamodb_table = "(YOUR DYNAMODB TABLE NAME)"
+        encrypt        = true
+    }
+    }
+    ```
 
-5. Move the local state file to a remote backend:
-``` bash
-$ cd global
-$ terraform init
-```
+1. Move the local state file to a remote backend:
 
-6.  Provision an SSL Certiifcate within AWS using their Certificate Manager service (ACM).
-In my case I wanted all combinations of access to my blog site to be encrypted, therefore as domain name I used:  `*.thepragmaticloud.com` (www.thepragmaticloud.com, prod.thepragmaticloud.com, etc.). 
-Be mindful that if you also wish to support the apex domain (Example:  `thepragmaticloud.com`) you will need to include a separate domain name for this when requesting the certificate.  (See:  https://docs.aws.amazon.com/acm/latest/userguide/acm-certificate.html)  
-Also, if you have purchased your domain name via route53 in AWS then the best and easiest validation option to choose is:  `DNS validation`
-Note that it usually takes around 5 minutes to issue and validate the certificate on the AWS side but they tell you that this can take up to 30 min.
-Also there's a fundamental requirement of cloudfront, which is that the certificate has to be requeuested in the `us-east-1` region (N. Virginia):
-```
-To use an ACM Certificate with Amazon CloudFront, you must request or import the certificate in the US East (N. Virginia) region. ACM Certificates in this region that are associated with a CloudFront distribution are distributed to all the geographic locations configured for that distribution.
-```
+    ``` bash
+    $ cd global
+    $ terraform init
+    ```
+ 
+### Part 2:  Create Environment-specific resources
+1.  Purchase a cool domain name for your blogging website.  This is a manual 
+
+1.  Provision an SSL Certiifcate within AWS using their Certificate Manager service (ACM).
+
+    In my case I wanted all combinations of access to my blog site to be encrypted, therefore as domain name I used:  `*.thepragmaticloud.com` (www.thepragmaticloud.com, prod.thepragmaticloud.com, etc.). 
+    Be mindful that if you also wish to support the apex domain (Example:  `thepragmaticloud.com`) you will need to include a separate domain name for this when requesting the certificate.  (See:  https://docs.aws.amazon.com/acm/latest/userguide/acm-certificate.html)  
+    Also, if you have purchased your domain name via route53 in AWS then the best and easiest validation option to choose is:  `DNS validation`
+    Note that it usually takes around 5 minutes to issue and validate the certificate on the AWS side but they tell you that this can take up to 30 min.
+    Also there's a fundamental requirement of cloudfront, which is that the certificate has to be requeuested in the `us-east-1` region (N. Virginia):
+
+    {% blockquote %}
+    To use an ACM Certificate with Amazon CloudFront, you must request or import the certificate in the US East (N. Virginia) region. ACM Certificates in this region that are associated with a CloudFront distribution are distributed to all the geographic locations configured for that distribution.
+    {% endblockquote %}
+
 7.  Modify the terrafrom.tfvars, copy-paste the ACM Certificate ARN from the previous step and run:
 ``` bash
 $ terraform plan -out tplan 
@@ -184,7 +201,9 @@ So now let's look at what we just did using terraform and try to learn some less
 - Use consistent naming conventions for your resources.  The naming conventions can change according to the resource but at least try to include the namespace and stage consistently in there, this way whoever looks at a resource can immediately tell where is it being used.    
 
 ## References
-[1]: [Best Coding Practices](https://en.wikipedia.org/wiki/Best_coding_practices)
+1. [Best Coding Practices](https://en.wikipedia.org/wiki/Best_coding_practices) <a name="ref1"></a>
+1. [MonoRepos are Awesome!](https://en.wikipedia.org/wiki/Monorepo) <a name="ref2"></a>
+1. [Version Control Systems](https://en.wikipedia.org/wiki/Version_control) <a name="ref2"></a>
 [2]: [Similar article on starting a blog using hexo and S3] https://dizzy.zone/2017/11/30/Starting-a-blog-with-hexo-and-AWS-S3/
 [3]: [Terraform Up and Running Book](https://www.terraformupandrunning.com/)
 [4]: [Hexo](https://hexo.io/)
@@ -195,7 +214,7 @@ So now let's look at what we just did using terraform and try to learn some less
 [4]: [Good intro guide to Hexo](https://xiaoxing.us/2017/11/18/from-0-to-1-build-your-blog-using-hexo/)
 [5]: [Theme chosen for the blog content in Hexo](https://github.com/ppoffice/hexo-theme-icarus)
 
-Finally, here goes my curated list on favorite articles, books, and videos on terraform:
+## Curated list of terraform online learning resources
 {% blockquote %}
 - Official Terraform Docs
     - https://www.terraform.io/intro/index.html
@@ -227,6 +246,22 @@ Finally, here goes my curated list on favorite articles, books, and videos on te
     - https://blog.gruntwork.io/terragrunt-how-to-keep-your-terraform-code-dry-and-maintainable-f61ae06959d8
 - Open sourcing Terratest: a swiss army knife for testing infrastructure code
     - https://blog.gruntwork.io/open-sourcing-terratest-a-swiss-army-knife-for-testing-infrastructure-code-5d883336fcd5
+{% endblockquote %}
+
+## Hexo Resources
+The typical workflow to experiment locally with hexo involves the following steps:
+1. Install the hexo cli
+
+{% blockquote %}
+- Hexo Official docs
+    - https://hexo.io/docs/
+- Icarus theme chosen for my personal blog content in Hexo
+    - https://github.com/ppoffice/hexo-theme-icarus
+    - https://blog.zhangruipeng.me/hexo-theme-icarus/
+- Concise and good intro guide to hexo:
+    - https://xiaoxing.us/2017/11/18/from-0-to-1-build-your-blog-using-hexo/
+- Mike Dane's (from Giraffe Academy's) video guides to Hexo:
+    - https://www.mikedane.com/static-site-generators/hexo/
 {% endblockquote %}
 
 _Special kudos to Hashicorp for creating Terraform and for open sourcing it and creating an awesome community around it, you guys ruck! And to GruntWork for doing an amazing job with devops in all aspects, with blog posts, books, open source tools, etc.,  One of the founders of the company:  **Yevgeniy Brikman** is IMO the community rockstar of Terraform!_
