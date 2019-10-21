@@ -3,7 +3,7 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: Personal Blog
+title: Personal Blog of Jorge Vasquez
 subtitle:
 description: My personal blog to rant about technology
 keywords: software architecture, cloud, devops, microservices, IAC
@@ -99,6 +99,6 @@ theme: icarus
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
   type: aws-s3
-  bucket: blog.staging.thepragmaticloud.com
+  bucket: personal-blog-prod
   region: us-east-2
 

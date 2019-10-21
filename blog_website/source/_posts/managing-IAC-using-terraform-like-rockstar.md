@@ -13,69 +13,74 @@ Getting started with technologies these days is easier than ever since there are
 - [Intro to Terraform](https://www.terraform.io/intro/index.html).
 - [Getting started with Terraform](https://learn.hashicorp.com/terraform/getting-started/install.html).
 
-Although the Terraform documentation is top quality after reading it you still feel like you're just grasping the surface (as most hello worlds do) and there's lots of complex, enterprise-level scenarios that are still unclear.
-People have different learning styles, for me my preference is learning lessons by a mix of theory and examples (I am a big fan of all books finishing by `...in Action`).  
-
-This article will be the first of a series of articles using different use cases that expose best practices within Terraform by example and will progress in complexity from one use case to another.  The first use case that will be covered is the definition of a blog site using serverless technologies in AWS.
+Although the Terraform documentation is top quality after reading it you still feel like you're just grasping the surface and there's lots of complex, enterprise-level scenarios that are unclear.
+People have different learning styles but for me my preference is learning lessons by a mix of theory and practice (I am a big fan of all books finishing by `...in Action`) and therefore this article will be the first of a series of articles using different use cases that expose best practices within Terraform by example and will progress in complexity from one use case to another.  The first use case that will be covered is the definition of a blog site using serverless technologies in AWS.
 My goal is to answer the following questions by the end of this article:
 1. How do we define modules that are reusable by a team in Terraform?
 2. How do we separate the IAC (Infrastructure as Code) between different environments while achieving [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)?
-    It is worth noting that IAC is after all code and the best coding practices that have been refined over the years for software systems are also applicable to IAC. [References](#ref1) 
+    It is worth noting that IAC is after all code and the [best coding practices](#bestCodingPractices) that have been refined over the years for software systems are also applicable to IAC.
+3.  What are some general Terraform tips and recommendations?
 
-Before proceeding let's define terraform and it's relevancy within the DevOps universe.
+Before proceeding let's define terraform and its relevancy within the DevOps universe.
 {% blockquote %}
-On the subject of DevOps my personal opinion is that it is one of the best coined buzzwords that I have encountered throughout my career.  There are a LOTS of buzzwords in the IT industry and most are very unclear and confusing such as Microservices, Digital Transformation, Web 2.0, etc.  However, the word Devops is actually very rich semantically and contains the core meaning in the word itself:  "a better collaboration between Developers and Operations teams", in some cases it can end up being the same person or team doing both.  It is very important to clarify a KEY element here which is the development aspect in DEVOPS.  This movement hugely embraces development as the automation element and therefore brings a lot of Software Engineering elements to the hardware and infrastructure world.
+On the subject of DevOps my personal opinion is that it is one of the best coined buzzwords that I have encountered throughout my career.  There are a LOTS of buzzwords in the IT industry and most are very unclear and confusing such as Microservices, Digital Transformation, Web 2.0, etc.  However, the word DevOps is actually very rich semantically and contains the core meaning in the word itself:  "a better collaboration between Developers and Operations teams", in some cases it can end up being the same person or team doing both.  It is very important to clarify a KEY element here which is the development aspect in DevOps.  This movement hugely embraces development as the automation element and therefore brings a lot of Software Engineering elements to the hardware and infrastructure world.
 {% endblockquote %}
 
-Terraform is an IAC tool that takes care of provisioning an Infrastructure.  Provisioning in layman's terms means to `bring infrastructure resources to life`.  Terraform uses a [declarative programming paradigm](https://en.wikipedia.org/wiki/Declarative_programming) and tracks the state of the resources that you declare using a yaml-like syntax created by Hashicorp (this is the company that created Terraform) called:  HCL (Hashicorp Configuration Language).  The interesting aspect here is that as a user of Terraform you don't need to track the `HOW` to arrive to a specific state, you just have to worry about the `WHAT`, terraform does the rest, it basically takes care of understanding the differences between an infrastructure's current state and the most recent state that it recorded, does a diff between both and figures out the most optimal path to arrive to the new desired state.  The terraform command that modifies your infrastructure reads its current state of the infrastructure, reads the real state of the infrastructure and figures out what changes are required in the real infrastructure to arrived to the desired state.  Note that a key element of terraform is a CLI tool that supports multiple commands to query your infrastructure, modify it, calculate the differences between the terraform state and the infrastructure state, represent a visual representation of the terraform state, etc.   
-There are 3 main pieces in the terraform equation:  
-1. current known terraform state
-2. new desired state 
-3. actual infrastructure state.  
-Terraform's typical lifecycle will compare these 3 states and identify the required changes to achieve the new desired state.  These changes can be of 3 types:  Create, Add, or Modify a resource(s).  A key notion to consider is that of drift which is the deviation of your infrastructure state from the one that Terraform is tracking.  Drift can happen for example when a user modifies a resource outside of terraform using a UI (e.g the AWS console).  Terraform does its best to deal with drift so as part of its flow it identifies changes between the known and desired terraform state and the real infrastructure state and decides on the actions to take.  Note that from terraform's point of view it's end goal is the desired state, so it will identify any actions required to bring the infrastructure to the desired state.  This means that modifications that took place outside of terraform can be lost if they're not specified in the desired state.        
+Terraform is an IAC (Infrastructure As Code) tool that takes care of provisioning an Infrastructure.  Provisioning in layman's terms means to `bring infrastructure resources to life`.  Terraform uses a [declarative programming paradigm](https://en.wikipedia.org/wiki/Declarative_programming) and tracks the state of the resources that you declare using a yaml-like syntax created by Hashicorp (this is the company behind Terraform) called:  HCL (Hashicorp Configuration Language).  The most interesting aspect here is that as a user of Terraform you don't need to worry about `HOW` to arrive to a specific state, instead you just have to worry about the `WHAT` and terraform does the rest.  It basically takes care of understanding the differences between an infrastructure's current state and the most recent state that it recorded by doing a diff between both and figuring out the most optimal path to arrive to the new desired state.  The terraform command that modifies your infrastructure reads its current registered state of the infrastructure, reads the real state of the infrastructure and figures out what changes are required in the real infrastructure to arrive to the desired state.  Note that a key element of terraform is a CLI tool that supports multiple commands to query your infrastructure, modify it, calculate the differences between the terraform state and the infrastructure state, represent a visual representation of the terraform state, etc.   
+So again, these are the 3 main state pieces within terraform:  
+1. Current known terraform state (represented by a .tfstate file)
+2. New desired state (represnted by the .tf files)
+3. Actual infrastructure state (represented in the provider's actual environment, in this case AWS)  
 
-Now that we have a clear definition of the tool that we intend to use let's establish the high level requirements of the problem that we intend to solve for this article:
-- We want create a public website for a personal blog 
-- The blog should support articles to be written in [markdown language](https://en.wikipedia.org/wiki/Markdown) to facilite creation and edition of content to people without a strong html+css+javascript background 
+Terraform's typical lifecycle will compare these 3 states and identify the required changes to achieve the new desired state.  These changes can be of 3 types:  Create, Add, or Modify resource(s).  A key notion to consider is that of [drift](#drift) which is the deviation of your infrastructure state from the one that Terraform is tracking.  Drift can happen for example when a user modifies a resource outside of terraform using a UI (e.g the AWS console).  Terraform does its best to deal with drift so as part of its flow it identifies changes between the known and desired terraform state and the real infrastructure state and decides on the actions to take.  Note that from terraform's point of view its end goal is the new desired state, so it will identify any actions required to bring the infrastructure to the desired state.  This means that modifications that took place outside of terraform can be lost if they're not specified in the desired state.        
+
+Now that we have definition of the tool that we intend to use let's establish the high level requirements of the problem that we intend to solve for this article:
+- We want to create a public website for a personal blog 
+- The blog should support articles to be written in [markdown language](https://en.wikipedia.org/wiki/Markdown) to facilite the creation and modification of content to people without a strong html+css+javascript background 
 - The blog should be as cheap as possible to run and maintain (by cheap I mean less than $5 CAD/month)
 - The blog should support templates to render content consistently across different blog posts and blog pages
-- The blog should start simple, just as a reading platform but allow to evolve with new features such as comments, comment approvals, etc.
+- The blog should start simple -just as a read-only blog- but support evolution with new features such as comments, comment approvals, etc.
 - The blog should support a staging environment where correct display and rendering can be tested and shared without being accessible by the general public
 - The blog content should be accesible using https
-- The blog response times should be fast and scale automatically whenever there's more viewers
+- The blog response times should be fast and scale automatically whenever there's more views
 - The blog should support proper rendering in different screen sizes ideally with availability of templates that use responsive design
 
 The chosen technology stack for the solution is:
 - IAC Provisioning tool:  Terraform
-- Blogging platform:  [Hexo](https://hexo.io/)
 - Hosting platform for the blogging website:  AWS S3
 - CDN for the blogging website:  AWS Cloudfront
-Note:  The goal of this article isn't to justify or explain the rationale behind the chosen technology stack, there are other great tools to manage blogs or to publish static websites out there and I don't have anything against them (Wordpress, Jekyll, etc.).
+- Blogging platform:  [Hexo](https://hexo.io/)
 
-All of the code used for this article is available in the following github repository:  https://github.com/jorgeandresvasquez/personal-blog.
+_Note:  The goal of this article isn't to justify or explain the rationale behind the chosen technology stack, there are other great tools to manage blogs or to publish static websites out there (Wordpress, Jekyll, etc.) and I don't have anything against them._
+
+All of the code used for this article is available in [github](#sourceCode).
 
 For the visually inclined (like myself!) here is a diagram of the infrastructure:
 
 {% asset_img JorgePersonalBlogAWSArchitecture.png AWS Personal Blog Architecture %}
 
-The solution has 2 main parts:
+The chosen solution has 2 main parts:
+
 1. The infrastructure provisioning
 1. The content of the static blogging website that will run in the AWS infrastructure
 
+This article focuses only on the infrastructure provisioning part, however I added some relevant links to the blogging tool ([Hexo](#hexo)) at the end of this article.
+
 ## Terraform Folder Structure
 
-This article focuses only on the infrastructure provisioning, however I added some relevant links to the blogging tool (Hexo) at the end of this article (Hexo Resources).
+One key aspect before starting with terraform code is to define the folder structure for it inside of your preferred [VCS](#vcs) (In our case we're using git and github).  The following diagram illustrates the folder structure that I created initially for this project and the final state after doing some module refactoring.
 
 | Cloud Folder Structure Before  | Cloud Folder Structure After          |
 | :-------------:           |:-------------:                  |
 | {% asset_img terraformPersonalBlogFolderStructureModuleStabilization.png AWS Personal Blog Architecture %}               | {% asset_img terraformPersonalBlogFolderStructureFinal.png AWS Personal Blog Architecture %}  |
 
-One key aspect before starting writing terraform code is to define the folder structure for it inside of your VCS [References](#ref3) (In our case we're using git and github).  For my projects I like breaking them by product in a monorepo and inside that monorepo [References](#ref2) I have a folder named:  `cloud`.  It helps me a lot when my folder structure clearly maps to my cloud tooling, environments and modules.  This folder is where I put all the IAC related to provisioning.  Inside cloud there's a subfolder for terraform...providers...aws.  Note that a product can have multiple providers (not too common but possible), but in this case we only have aws.  Under aws I like to separate my resources at a high level by the ones that are global (by global I mean shared across all stages or environments) and the ones that are specific to each environment.  Sometimes the notion of fully global resources may not be present, for example if your company has a completely different AWS account for each environment.  (This is a subject for another discussion altogether but in enterprise systems I highly recommend you to use at least 2 different AWS accounts:  one for production and another one for non-prod).  
-In this case since this is a personal blog I decided to only use one AWS account and therefore under global I am keeping the terraform remote backend which is comprised of the S3 bucket that stores my terraform state as well as the dynamodb table to prevent multiple users from modifying the terraform state at the same time (Via terraform state locking).  
-For the stages notice that I only have 2 for this specific project:  prod and staging.  It is very common practice to have slight differences in environments.  For example, if you need an AWS RDS Cluster with an instances class of `db.r5.24xlarge` which costs around $11.52/hour you probably want to use something smaller and cheaper than that for your dev environments).  Also, there can be resources that you probably don't require at all in a specific environment.  For example, in this case I purposedly decided to use a CDN with AWS Cloudfront for the prod version of my blog but for the staging version I decided to use directly an S3 bucket where I can verify the rendering of my blog before pushing everything to prod.  
-One last and very important folder level by environment is by specific terraform module (These are sometimes referred to as layers as well).  Let's say that my blog starts becoming more complex and eventually I decide to introduce a relational database to support comments in my blog posts.  In this case I would create another folder for the networking module of my product and another folder for the database module of my product.  The reasoning behind this is to be able to separate the different states of different modules of a product to avoid unnecessary risks when modifying infrastructure or if you want to use a better expression:  _"To reduce the blast radius"_ of errors.
+I like managing products in a [monorepo](#monorepo) and inside  I tend to have a folder named:  `cloud` where I put all the IAC related to provisioning.  It helps me a lot when my folder structure clearly maps to my cloud tooling, environments and modules.  Inside  the cloud folder there's a subfolder for terraform...providers...aws.  Note that a product or system can have multiple providers but in this case we only have aws.  Under aws I like to separate my resources at a high level by the ones that are global (by global I mean shared across all stages or environments) and the ones that are specific to each environment.  Sometimes the notion of fully global resources may not be present, for example if your company has a completely different AWS account for each environment.  (This is a subject for another discussion altogether but in enterprise systems I highly recommend to use at least 2 different AWS accounts:  one for production and another one for non-prod). 
 
-Our folder structure for this scenario would be something as follows:
+In this case -since this is a personal blog- I decided to only use one AWS account and therefore under global I am keeping the common terraform remote backend resources which are comprised of the S3 bucket that stores the terraform state as well as the dynamodb table to prevent multiple users from modifying the terraform state at the same time (via terraform state locking).  
+Notice that there's only 2 stages for this specific project:  prod and staging.  It is a very common practice to have slight differences in environments.  For example, if you need an AWS RDS Cluster with an instances class of `db.r5.24xlarge` which costs around $11.52/hour you probably want to use something smaller and cheaper for your dev environments).  Also, there can be resources that you probably don't require at all in a specific environment.  For this case I purposedly decided to use a CDN with AWS Cloudfront for the prod version of my blog but for the staging version I decided to use directly an S3 bucket where I can verify the rendering of my blog before pushing everything to prod.  
+One last and very important folder level by environment is representing each terraform "layer" (These represent a logical breakdown of the infrastructure parts that a system or product is made of).  Let's say that my blog starts becoming more complex and eventually I decide to introduce a relational database to support comments in my blog posts.  In this case I would create another folder for the networking layer of my product and another folder for the database layer of my product.  The reasoning behind this is to be able to separate the different states of different layers of a product to avoid unnecessary risks when modifying infrastructure or if you want to use a better expression:  _"To reduce the blast radius"_ of errors.
+
+Our folder structure for the above hypothetical scenario of adding a relational db would be something as follows:
 
 ``` yaml
 - prod
@@ -88,8 +93,8 @@ Our folder structure for this scenario would be something as follows:
     - vpc
  ```
 
-I believe that we can all agree that the change frequency of your vpc and relational-db will probably be much less than that of your blog-website so instead of modifying a centralized terraform state it is better to just modify the terraform state associated to the layer of your product that changes.  WHen you have separate state you also will have to make sure that changes are run in the correct order and that you can reference variables from another separate state.  Terragrunt is an excellent open-source tool that can help in orchestrating terraform commands across multiple states for this specific use case [References](#terragrunt).  Another relevant feature is the  `terraform_remote_state` data source that allows you to fetch the Terraform state file from one set of Terraform configurations to another.  For example, in case you wanted to query the subnet group from the vpc layer within the relational-db layer.
-Also notice that in the folder structure screens at the top there are 2 columns with 2 images:  one representing the folder structure before and the other one after.  This is a personal preference but I have found that creating a stable terraform module requires some practice and iterations to get it right so my preference here is to set it up in the context of a specific application in a modules folder, iterate it and get it stable and once it is then move it to either its own repository or a repository with all the shared modules of an organization.  I know that some people might not agree with me but in my background as a developer it takes me a while to abstract a module correctly and I prefer doing that in isolatio because as Werner Vogels, CTO of Amazon Web Services, says: _"Code can change but APIs are Forever"_ and once a module gets pusblished and starts being used by different systems it is no longer a good idea to do heavy refactoring on it.  
+I believe that we can all agree that the change frequency of the vpc and relational-db will probably be much less than that of the blog-website so instead of modifying a centralized terraform state it is better to just modify the terraform state associated to the layer of the product that changed.  When you have separate states you also will have to make sure that changes are run in the correct order and that you can reference variables from another separate state.  [Terragrunt](#terragrunt) is an excellent open-source tool that can help in orchestrating terraform commands across multiple states for this specific use case.  Another relevant feature is the  `terraform_remote_state` data source that allows users to fetch the Terraform state file from one set of Terraform configurations to another.  (e.g: in case you wanted to query the subnet group from the vpc layer within the relational-db layer)
+Now, why did I decide to include the 2 folder structure screens at the top:  one representing the folder structure before and the other one after.  I wanted to illustrate the point that creating a stable terraform module requires some practice and iterations to get it right so my preference is to start defining modules in the context of a specific application in a modules folder, iterate it, stabilize it, and then move it to either its own repository or a repository with all the shared modules of an organization.  I know that some people might not agree with this but it takes time and a couple of iterations to abstract a module correctly and I prefer doing that in isolation because as Werner Vogels, CTO of Amazon Web Services, says: _"Code can change but APIs are Forever"_ and once a module gets pusblished and starts being used by different systems it is no longer a good idea to do heavy refactoring on it.  
 
 ## Steps to Create the AWS cloud environment for your blog website
 
@@ -153,7 +158,8 @@ Before beginning here is a high-level overview of the different terraform module
 {% asset_img JorgePersonalBlogTerraformModulesDependencies.png AWS Personal Blog Architecture %}
 From the image you can see how I have abstracted the modules that are reusable to a terraform modules repository in order to reuse as much code as possible (following the ubiquitous DRY principle!).  A very good practice is to reuse third party repositories and modules that you trust.  In my case I have found that the repositories and modules maintained by cloudposse on github to be very mature and as an example in this case I am using a very simple of their modules (https://github.com/cloudposse/terraform-null-label) for overall consistency in my tags.  
 You can also notice that the dependencies between the staging and production environment are not exactly the same as for my production environment I am using a CDN but for my staging environment I thought that this was an overkill and decided to only use an S3 public bucket.  
-So the steps for the creation of the prod terraform environment are the following:
+
+The steps for the creation of the prod terraform environment are the following:
 
 1.  Purchase a cool domain name for your blogging website.  This is a manual process and since for this guide we're using AWS the ideal is to purchase your domain name within AWS from route53.  There's also the option of transferring the domain registration into route 53.  More detailed instructions can be found here:  
     - New domain registration in Route53:  https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/domain-register.html
@@ -184,25 +190,23 @@ Finally, let's try to recapitulate on some important terraform best practices (s
 - Create a curated library of terraform modules that can be used across your organization.  Here, I tend to focus more on modules that solve common business cases present across the organization:  Examples:  Creating a static website infrastructure, creating a DB cluster that is Highly Available and has Optimal Performance, Provisioning a VPC with different private subnets and public subnets that reflect common networking patterns used in your organization (ex:  public Load Balancers + private Application Servers + private RDS Datasources)
 - Map the folder structure to the remote state structure (this is often referred to as a WYSIWYG in the UI world but I think the same idea is applicable here) [References](#wysiwyg)
 - Isolate, isolate, isolate!  Separate the terraform state into different stages and modules of a system.  
-- Use tags, separate them between global ones and resource-specific ones:
-    - Ideas for global tags:
-        - TeamOwner
+- Use tags to classify your infrastructure resources in order to be able to find support when required, control and monitor your cloud Infrastructure costs, etc.
+    - Ideas for tags:
+        - Team
         - DeployedBy
-            - Ex:  terraform vs manually
-        - Product
-    - Ideas for tags by environment:
+            - Ex:  terraform vs manually (If manually include the person's email that did it)
+        - Namespace
         - Environment
-    - Ideas for resource-specific tags:
-        - Name
+        - ResourceName
 - After you start using Terraform, you should only use Terraform to manage your IAC.
     - When a part of your infrastructure is managed by Terraform, you should never manually make changes to it. Otherwise, you not only set yourself up for weird Terraform errors, but you also void many of the benefits of using infrastructure as code in the first place, given that the code will no longer be an accurate representation of your infrastructure.
     - If you created infrastructure before you started using Terraform, you can use the terraform import command to add that infrastructure to Terraform’s state file, so that Terraform is aware of and can manage that infrastructure. The import command takes two arguments. The first argument is the “address” of the resource in your Terraform configuration files. This makes use of the same syntax as resource references, such as <PROVIDER>_<TYPE>.<NAME> (e.g., aws_iam_user.existing_user). The second argument is a resource-specific ID that identifies the resource to import. For example, the ID for an aws_iam_user resource is the name of the user (e.g., yevgeniy.brikman) and the ID for an aws_instance is the EC2 Instance ID (e.g., i-190e22e5). The documentation at the bottom of the page for each resource typically specifies how to import it.
     - Note that if you have a lot of existing resources that you want to import into Terraform, writing the Terraform code for them from scratch and importing them one at a time can be painful, so you might want to look into a tool such as [Terraforming](http://terraforming.dtan4.net/), which can import both code and state from an AWS account automatically.
 - Be careful with refactoring!
     - Example:  Changing names can lead to downtimes
-    - use a create_before_destroy strategy when applicable for renaming
-    - If at any point you require to modify the terraform state file the recommended approach is to use the terraform CLI (specifically the `terraform state` command)[References](#terrStateFileCleaning) 
-- Version pin all of your Terraform modules to a specific version of Terraform
+    - Use a create_before_destroy strategy when applicable for renaming
+    - If at any point you require to modify the terraform state file the recommended approach is to use the terraform CLI (specifically the `terraform state` command)[References](#terraformStateFileCleaning) 
+- Version pin all of your Terraform modules to a specific version of Terraform and terraform provider
     - For production-grade code, it is recommended to pin the version even more strictly:
     ```
     terraform {
@@ -216,14 +220,16 @@ Finally, let's try to recapitulate on some important terraform best practices (s
         version = "~> 2.0"
     }
     ```
-- Use consistent naming conventions for your resources.  The naming conventions can change according to the resource but at least try to include the namespace and stage consistently in there, this way whoever looks at a resource can immediately tell where is it being used.
-    - Like with software engineering in general ideally your time should create and maintain a document with your coding standars in Terraform.   
+- Use consistent naming conventions for your resources and consistent coding standards.  The naming conventions can change according to the resource but at least try to include the namespace and environment consistently in there, this way whoever looks at a resource can immediately tell where is it being used.
+    - Like with software engineering in general you should create and maintain a document with your coding standards in Terraform.   
 
 ## References
-1. [Best Coding Practices](https://en.wikipedia.org/wiki/Best_coding_practices) <a name="ref1"></a>
-1. [MonoRepos are Awesome!](https://en.wikipedia.org/wiki/Monorepo) <a name="ref2"></a>
-1. [Version Control Systems](https://en.wikipedia.org/wiki/Version_control) <a name="ref3"></a>
-1. [Recommended Way to Clean a Terraform State File](https://medium.com/faun/cleaning-up-a-terraform-state-file-the-right-way-ab509f6e47f3) <a name="terrStateFileCleaning"></a>
+1. [Source code associated to this article in github](https://github.com/jorgeandresvasquez/personal-blog) <a name="sourceCode"></a>
+1. [Best Coding Practices](https://en.wikipedia.org/wiki/Best_coding_practices) <a name="bestCodingPractices"></a>
+1. [Drift within terraform](https://www.hashicorp.com/blog/detecting-and-managing-drift-with-terraform/) <a name="drift"></a>
+1. [MonoRepos are Awesome!](https://en.wikipedia.org/wiki/Monorepo) <a name="monorepo"></a>
+1. [Version Control Systems](https://en.wikipedia.org/wiki/Version_control) <a name="vcs"></a>
+1. [Recommended Way to Clean a Terraform State File](https://medium.com/faun/cleaning-up-a-terraform-state-file-the-right-way-ab509f6e47f3) <a name="terraformStateFileCleaning"></a>
 1. [What you see is what you get](https://en.wikipedia.org/wiki/WYSIWYG) <a name="wysiwyg"></a>
 1. [Terragrunt for executing commands on multiple modules](https://github.com/gruntwork-io/terragrunt#execute-terraform-commands-on-multiple-modules-at-once) <a name="wysiwyg"></a>
 
@@ -261,7 +267,7 @@ Finally, let's try to recapitulate on some important terraform best practices (s
     - https://blog.gruntwork.io/open-sourcing-terratest-a-swiss-army-knife-for-testing-infrastructure-code-5d883336fcd5
 {% endblockquote %}
 
-## Hexo Resources
+## Hexo Resources <a name="hexo"></a>
 In order to test the blog website content locally run the following:
 
 ``` bash
@@ -285,6 +291,4 @@ If you want to dig deeper into Hexo here is a curated list of the Hexo resources
     - https://dizzy.zone/2017/11/30/Starting-a-blog-with-hexo-and-AWS-S3/
 {% endblockquote %}
 
-_Special kudos to Hashicorp for creating Terraform and for open sourcing it and creating an awesome community around it, you guys ruck! And to GruntWork for doing an amazing job with devops in all aspects, with blog posts, books, open source tools, etc.,  One of the founders of the company:  **Yevgeniy Brikman** is IMO the community rockstar of Terraform!_
-
-
+_Special kudos to Hashicorp for creating Terraform and for open sourcing it and creating an awesome community around it, you guys rock! And to GruntWork for doing an amazing job with devops in all aspects, with blog posts, books, open source tools, etc.,  One of the founders of the company:  **Yevgeniy Brikman** is IMHO the community rockstar of Terraform!_
