@@ -1,2 +1,2 @@
 stage = "staging"
-project = "personal-blog"
+namespace = "personal-blog"

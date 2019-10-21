@@ -99,6 +99,6 @@ theme: icarus
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
   type: aws-s3
-  bucket: personal-blog-prod
-  region: us-east-1
+  bucket: blog.staging.thepragmaticloud.com
+  region: us-east-2
 

@@ -3,7 +3,7 @@ variable "stage" {
   type        = string
 }
 
-variable "project" {
-  description = "The name of the project to which these terraform resources are associate"
+variable "namespace" {
+  description = "Namespace to which these resources are associated"
   type        = string
 }
