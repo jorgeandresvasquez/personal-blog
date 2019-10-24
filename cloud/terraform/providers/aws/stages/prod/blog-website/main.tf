@@ -37,6 +37,7 @@ module "blog_website" {
   aliases                  = ["www.thepragmaticloud.com", "thepragmaticloud.com"]
   origin_id                = "${var.namespace}-${var.stage}-origin-id"
   origin_force_destroy     = true
+  default_ttl              = 43200 //12 hours in seconds
   acm_certificate_arn      = var.acm_certificate_arn
   minimum_protocol_version = var.minimum_protocol_version
   tags                     = module.labels.tags
