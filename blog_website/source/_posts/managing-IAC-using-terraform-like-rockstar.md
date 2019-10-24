@@ -1,12 +1,12 @@
 ---
-title: Managing IAC like a Rockstar using Terraform
+title: "Managing IaC like a Rockstar using Terraform (case study: static blogging website)"
 date: 2019-10-16 23:43:41
 tags: 
     - DevOps
     - Hexo
     - Terraform
 categories:
-    - [IAC, Terraform]
+    - [IaC, Terraform]
 thumbnail: images/rockstar.jpg
 ---
 Getting started with technologies these days is easier than ever since there are plenty of introductory articles and most technology providers will keep dedicated teams for writing and keeping up-to-date technical documentation with titles such as `Getting started with xxxx`. `10 minute intro to xxxxx`, `Quick intro to...`, etc.  Terraform is no exception to this and they have great entry level documentation here:  
@@ -20,8 +20,8 @@ People have different learning styles but for me my preference is learning lesso
 My goal is to answer the following questions by the end of this article:
 
 1. How do we define modules that are reusable by a team in Terraform?
-2. How do we separate the IAC (Infrastructure as Code) between different environments while achieving [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)?
-    It is worth noting that IAC is after all code and the [best coding practices](#bestCodingPractices) that have been refined over the years for software systems are also applicable to IAC.
+2. How do we separate the IaC (Infrastructure as Code) between different environments while achieving [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)?
+    It is worth noting that IaC is after all code and the [best coding practices](#bestCodingPractices) that have been refined over the years for software systems are also applicable to IAC.
 3.  What are some general Terraform tips and recommendations?
 
 Before proceeding let's define terraform and its relevancy within the DevOps universe.
@@ -29,7 +29,7 @@ Before proceeding let's define terraform and its relevancy within the DevOps uni
 On the subject of DevOps my personal opinion is that it is one of the best coined buzzwords that I have encountered throughout my career.  There are a LOTS of buzzwords in the IT industry and most are very unclear and confusing such as Microservices, Digital Transformation, Web 2.0, etc.  However, the word DevOps is actually very rich semantically and contains the core meaning in the word itself:  "a better collaboration between Developers and Operations teams", in some cases it can end up being the same person or team doing both.  It is very important to clarify a KEY element here which is the development aspect in DevOps.  This movement hugely embraces development as the automation element and therefore brings a lot of Software Engineering elements to the hardware and infrastructure world.
 {% endblockquote %}
 
-Terraform is an IAC (Infrastructure As Code) tool that takes care of provisioning an Infrastructure.  Provisioning in layman's terms means to `bring infrastructure resources to life`.  Terraform uses a [declarative programming paradigm](https://en.wikipedia.org/wiki/Declarative_programming) and tracks the state of the resources that you declare using a yaml-like syntax created by Hashicorp (this is the company behind Terraform) called:  HCL (Hashicorp Configuration Language).  The most interesting aspect here is that as a user of Terraform you don't need to worry about `HOW` to arrive to a specific state, instead you just have to worry about the `WHAT` and terraform does the rest.  
+Terraform is an IaC (Infrastructure As Code) tool that takes care of provisioning an Infrastructure.  Provisioning in layman's terms means to `bring infrastructure resources to life`.  Terraform uses a [declarative programming paradigm](https://en.wikipedia.org/wiki/Declarative_programming) and tracks the state of the resources that you declare using a yaml-like syntax created by Hashicorp (this is the company behind Terraform) called:  HCL (Hashicorp Configuration Language).  The most interesting aspect here is that as a user of Terraform you don't need to worry about `HOW` to arrive to a specific state, instead you just have to worry about the `WHAT` and terraform does the rest.  
 
 There are 3 main states that terraform has to deal with:  
 
@@ -57,7 +57,7 @@ The high level requirements of the problem that we intend to solve for this arti
 
 The chosen technology stack that satisfies the above requirements is:
 
-- IAC Provisioning tool:  Terraform
+- IaC Provisioning tool:  Terraform
 - Hosting platform for the blogging website:  AWS S3
 - CDN for the blogging website:  AWS Cloudfront
 - Blogging platform:  [Hexo](https://hexo.io/)
@@ -85,7 +85,7 @@ One key aspect before starting with terraform code is to define the folder struc
 | :-------------:           |:-------------:                  |
 | {% asset_img terraformPersonalBlogFolderStructureModuleStabilization.png AWS Personal Blog Architecture %}               | {% asset_img terraformPersonalBlogFolderStructureFinal.png AWS Personal Blog Architecture %}  |
 
-I like managing products in a [monorepo](#monorepo) and inside  I tend to have a folder named:  `cloud` where I put all the IAC related to provisioning.  It helps me a lot when my folder structure clearly maps to my cloud tooling, environments and modules.  Inside  the cloud folder there's a subfolder for terraform...providers...aws.  Note that a product or system can have multiple providers but in this case we only have aws.  Under aws I like to separate my resources at a high level between the ones that are global (by global I mean shared across all stages or environments) and the ones that are specific to each environment.  Sometimes the notion of fully global resources may not be present, for example if your company has a completely different AWS account for each environment.  (This is a subject for another discussion altogether but in enterprise systems I highly recommend to use at least 2 different AWS accounts:  one for production and another one for non-prod). 
+I like managing products in a [monorepo](#monorepo) and inside  I tend to have a folder named:  `cloud` where I put all the IaC related to provisioning.  It helps me a lot when my folder structure clearly maps to my cloud tooling, environments and modules.  Inside  the cloud folder there's a subfolder for terraform...providers...aws.  Note that a product or system can have multiple providers but in this case we only have aws.  Under aws I like to separate my resources at a high level between the ones that are global (by global I mean shared across all stages or environments) and the ones that are specific to each environment.  Sometimes the notion of fully global resources may not be present, for example if your company has a completely different AWS account for each environment.  (This is a subject for another discussion altogether but in enterprise systems I highly recommend to use at least 2 different AWS accounts:  one for production and another one for non-prod). 
 
 In this case -since this is a very simple personal blog- I decided to only use one AWS account and therefore under global I am keeping the common terraform remote backend resources which are comprised of the S3 bucket that stores the terraform state as well as the dynamodb table that prevents multiple users from modifying the terraform state at the same time (via terraform state locking).  
 There's also only 2 stages for this specific project:  prod and staging.  It is a very common practice to have slight differences in environments.  For example, if for a specific use case you required an AWS RDS Cluster with an instances class of `db.r5.24xlarge` (which costs around $11.52/hour) you probably would want to use something smaller and cheaper for your dev environments!  Also, there can be resources that you probably don't require at all in a specific environment.  For this case I purposedly decided to use a CDN with AWS Cloudfront for the prod version of my blog but for the staging version I decided to only use an S3 bucket where I can verify the rendering of my blog before pushing everything to prod.  
@@ -215,7 +215,7 @@ Finally, let's try to recapitulate on some important terraform best practices (s
         - Namespace (product or system to which the resource is associate)
         - Environment
         - ResourceName
-- After you start using Terraform, you should only use Terraform to manage your IAC.
+- After you start using Terraform, you should only use Terraform to manage your IaC.
     - When a part of your infrastructure is managed by Terraform, you should never manually make changes to it. Otherwise, you not only set yourself up for weird Terraform errors, but you also void many of the benefits of using infrastructure as code in the first place, given that the code will no longer be an accurate representation of your infrastructure.
     - If you created infrastructure before you started using Terraform, you can use the terraform import command to add that infrastructure to Terraform’s state file, so that Terraform is aware of and can manage that infrastructure.
     - Note that if you have a lot of existing resources that you want to import into Terraform, writing the Terraform code for them from scratch and importing them one at a time can be painful, so you might want to look into a tool such as [Terraforming](http://terraforming.dtan4.net/), which can import both code and state from an AWS account automatically.
